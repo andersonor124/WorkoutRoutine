@@ -11,6 +11,8 @@ A gamified weekly workout planner. Tell it your height, weight, age, fitness lev
 - All data is stored on-device (localStorage). No account needed.
 
 ## Getting started
+👉 **New here? Follow the step-by-step guide: [HOW_TO_RUN.md](HOW_TO_RUN.md)**
+
 ```bash
 npm install
 npm run dev      # start the app

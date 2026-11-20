@@ -45,3 +45,23 @@ describe('store flow', () => {
     expect(useAppStore.getState().plan!.weekStart).toBe('2026-11-23');
   });
 });
+
+describe('joining mid-week', () => {
+  beforeEach(() => useAppStore.getState().reset());
+  const friday = new Date(2026, 10, 20, 18); // Fri 2026-11-20
+
+  it('does not count days before signup and can still earn the full-week bonus', () => {
+    // 4 days/week schedule: Mon, Tue, Thu, Fri. Joining Friday leaves only Friday.
+    useAppStore.getState().completeOnboarding({ ...baseProfile, daysPerWeek: 4 }, friday);
+    expect(useAppStore.getState().progress.startDate).toBe('2026-11-20');
+    const plan = useAppStore.getState().plan!;
+    const fri = plan.days[4];
+    expect(fri.focus).not.toBe('rest');
+    const res = useAppStore.getState().finishWorkout({ dayIndex: 4, doneIds: fri.exercises.map((e) => e.exerciseId), durationMin: 30, now: friday });
+    expect(res.celebrations.some((c) => c.kind === 'week')).toBe(true);
+    expect(useAppStore.getState().progress.badges['week-warrior']).toBeDefined();
+    // ...so the plan gets harder next week.
+    useAppStore.getState().ensureCurrentWeek(new Date(2026, 10, 23));
+    expect(useAppStore.getState().plan!.weekNumber).toBe(2);
+  });
+});

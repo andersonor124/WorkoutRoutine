@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getExercise } from '../data/exercises';
+import { beforeStart } from '../engine/gamification';
 import { DAY_NAMES, addDaysISO, fromISODate, weekStartISO, weekdayIndex } from '../engine/metrics';
 import { useAppStore } from '../store/useAppStore';
 
@@ -11,10 +12,11 @@ const FOCUS_COLOR: Record<string, string> = {
 export default function WeekPlan() {
   const plan = useAppStore((s) => s.plan)!;
   const history = useAppStore((s) => s.progress.history);
+  const startDate = useAppStore((s) => s.progress.startDate);
   const todayIdx = weekdayIndex(new Date());
   const [open, setOpen] = useState<number>(todayIdx);
   const done = new Set(history.filter((h) => weekStartISO(fromISODate(h.date)) === plan.weekStart).map((h) => h.dayIndex));
-  const training = plan.days.filter((d) => d.focus !== 'rest');
+  const training = plan.days.filter((d) => d.focus !== 'rest' && !beforeStart(plan, d.dayIndex, startDate));
 
   return (
     <div className="space-y-4">
@@ -30,6 +32,7 @@ export default function WeekPlan() {
         {plan.days.map((d) => {
           const isDone = done.has(d.dayIndex);
           const isToday = d.dayIndex === todayIdx;
+          const preStart = beforeStart(plan, d.dayIndex, startDate);
           return (
             <button
               key={d.dayIndex}
@@ -38,7 +41,7 @@ export default function WeekPlan() {
               style={{ background: `${FOCUS_COLOR[d.focus]}${isDone ? '55' : '22'}` }}
             >
               <span className="text-[11px] font-bold text-slate-300">{DAY_NAMES[d.dayIndex]}</span>
-              <span className="text-xl">{isDone ? '✅' : d.focus === 'rest' ? '🏕️' : '⚔️'}</span>
+              <span className={`text-xl ${preStart && !isDone ? 'opacity-30 grayscale' : ''}`}>{isDone ? '✅' : d.focus === 'rest' ? '🏕️' : '⚔️'}</span>
               <span className="text-[10px] text-slate-400">{fromISODate(addDaysISO(plan.weekStart, d.dayIndex)).getDate()}</span>
             </button>
           );
@@ -85,7 +88,10 @@ export default function WeekPlan() {
                     );
                   })}
                 </ol>
-                {!done.has(d.dayIndex) && d.dayIndex <= todayIdx && (
+                {beforeStart(plan, d.dayIndex, startDate) && !done.has(d.dayIndex) && (
+                  <p className="mt-3 rounded-xl bg-slate-800/60 p-3 text-sm text-slate-400">This was before you joined, so it doesn't count against you. Your quest starts from day one!</p>
+                )}
+                {!done.has(d.dayIndex) && d.dayIndex <= todayIdx && !beforeStart(plan, d.dayIndex, startDate) && (
                   <Link to={`/workout/${d.dayIndex}`} className="btn-primary mt-3 w-full">
                     {d.dayIndex === todayIdx ? 'Start mission' : 'Catch up on this mission'}
                   </Link>

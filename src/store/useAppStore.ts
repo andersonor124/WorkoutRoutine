@@ -87,7 +87,7 @@ export const useAppStore = create<State>()(
           profile: p,
           startProfile: p,
           plan: generatePlan(p, { weekStart, weekNumber: 1 }),
-          progress: { ...emptyProgress(weekStart), quests: questsFor(weekStart) },
+          progress: { ...emptyProgress(weekStart), startDate: toISODate(now), quests: questsFor(weekStart) },
           celebrations: [],
         });
       },
@@ -104,7 +104,7 @@ export const useAppStore = create<State>()(
         const weekStart = weekStartISO(now);
         if (plan.weekStart === weekStart) return;
         // Progressive overload: level the plan up only if they did ≥80% last week.
-        const nextWeek = weekCompletion(progress.history, plan) >= 0.8 ? plan.weekNumber + 1 : plan.weekNumber;
+        const nextWeek = weekCompletion(progress.history, plan, progress.startDate) >= 0.8 ? plan.weekNumber + 1 : plan.weekNumber;
         set({
           plan: generatePlan(profile, { weekStart, weekNumber: nextWeek }),
           progress: { ...progress, quests: questsFor(weekStart) },
@@ -150,7 +150,7 @@ export const useAppStore = create<State>()(
         };
         const celebrations: Celebration[] = [];
 
-        const isWeekComplete = weekComplete(next.history, plan);
+        const isWeekComplete = weekComplete(next.history, plan, progress.startDate);
         if (isWeekComplete) {
           next.xp += FULL_WEEK_BONUS;
           celebrations.push({ kind: 'week', xp: FULL_WEEK_BONUS });

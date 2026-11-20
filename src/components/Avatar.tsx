@@ -103,7 +103,7 @@ export default function Avatar({ shape, look, build, stage, size = 180, ghost = 
     const fistR = Math.min(4.2 + A * 0.4, 8.5);
     const bandW = (4.6 + (A - 5) * 0.6) * 1.75 + 1.5;
     return (
-      <g key={side}>
+      <g key={`arm${side}`}>
         <line x1={a.sx} y1={a.sy} x2={a.ex} y2={a.ey} stroke={url('skin')} strokeWidth={Aw * 2.1} strokeLinecap="round" />
         <line x1={a.ex} y1={a.ey} x2={a.hx} y2={a.hy} stroke={url('skin')} strokeWidth={Aw * 1.75} strokeLinecap="round" />
         {/* biceps bulge grows with definition */}
@@ -183,7 +183,7 @@ export default function Avatar({ shape, look, build, stage, size = 180, ghost = 
     const ex = cx + side * 10.5;
     const ey = headY + 3;
     return (
-      <g key={side}>
+      <g key={`eye${side}`}>
         <ellipse cx={ex} cy={ey} rx={6.4} ry={7.4} fill="#fff" />
         <ellipse cx={ex + side * -0.4} cy={ey + 0.8} rx={4.8} ry={5.9} fill={url('iris')} />
         <circle cx={ex + side * -0.4} cy={ey + 1.2} r={2.5} fill="#120a05" />
@@ -283,7 +283,7 @@ export default function Avatar({ shape, look, build, stage, size = 180, ghost = 
 
         {/* legs */}
         {([-1, 1] as const).map((side) => (
-          <g key={side}>
+          <g key={`leg${side}`}>
             <path d={leg(side)} fill={url('skin')} />
             {D > 0.3 && <path d={`M ${legX(side) - side * 2} ${hipY + 16} Q ${legX(side) + side * 3} ${hipY + 26} ${legX(side)} ${hipY + 38}`} stroke={line} strokeWidth={1.1} fill="none" opacity={D} />}
           </g>

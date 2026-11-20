@@ -4,7 +4,7 @@ import QuestCard from '../components/QuestCard';
 import TransformationCard from '../components/TransformationCard';
 import { StreakFlame, XPBar } from '../components/ui';
 import { BUILDS } from '../data/builds';
-import { levelInfo, liveStreak, rankTitle } from '../engine/gamification';
+import { beforeStart, levelInfo, liveStreak, rankTitle } from '../engine/gamification';
 import { DAY_NAMES, fromISODate, toISODate, weekStartISO, weekdayIndex } from '../engine/metrics';
 import { useAppStore } from '../store/useAppStore';
 
@@ -28,7 +28,7 @@ export default function Dashboard() {
   const streak = liveStreak(progress, toISODate(now), profile);
   const doneThisWeek = new Set(progress.history.filter((h) => weekStartISO(fromISODate(h.date)) === plan.weekStart).map((h) => h.dayIndex));
   const todayDone = doneThisWeek.has(todayIdx);
-  const missed = plan.days.filter((d) => d.focus !== 'rest' && d.dayIndex < todayIdx && !doneThisWeek.has(d.dayIndex));
+  const missed = plan.days.filter((d) => d.focus !== 'rest' && d.dayIndex < todayIdx && !doneThisWeek.has(d.dayIndex) && !beforeStart(plan, d.dayIndex, progress.startDate));
   const nextDay = plan.days.find((d) => d.focus !== 'rest' && d.dayIndex > todayIdx);
 
   return (

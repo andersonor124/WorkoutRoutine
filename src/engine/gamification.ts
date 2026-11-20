@@ -72,16 +72,28 @@ export function workoutXp(plan: WeeklyPlan, dayIndex: number, doneIds: string[])
   return base + (allDone ? WORKOUT_COMPLETE_BONUS : 0);
 }
 
-/** True if every training day of this week has a recorded workout. */
-export function weekComplete(history: CompletedWorkout[], plan: WeeklyPlan): boolean {
-  const trainingDays = plan.days.filter((d) => d.focus !== 'rest').map((d) => d.dayIndex);
+/** Training days of this plan on/after `fromIso` (the user's join date). */
+export function activeTrainingDays(plan: WeeklyPlan, fromIso?: string): number[] {
+  return plan.days
+    .filter((d) => d.focus !== 'rest' && (!fromIso || addDaysISO(plan.weekStart, d.dayIndex) >= fromIso))
+    .map((d) => d.dayIndex);
+}
+
+/** True if a day happened before the user joined, so it can't be missed. */
+export function beforeStart(plan: WeeklyPlan, dayIndex: number, fromIso?: string): boolean {
+  return !!fromIso && addDaysISO(plan.weekStart, dayIndex) < fromIso;
+}
+
+/** True if every (post-signup) training day of this week has a recorded workout. */
+export function weekComplete(history: CompletedWorkout[], plan: WeeklyPlan, fromIso?: string): boolean {
+  const trainingDays = activeTrainingDays(plan, fromIso);
   const done = new Set(history.filter((h) => weekStartISO(fromISODate(h.date)) === plan.weekStart).map((h) => h.dayIndex));
   return trainingDays.length > 0 && trainingDays.every((d) => done.has(d));
 }
 
 /** Share of last week's training days that were completed (0..1). */
-export function weekCompletion(history: CompletedWorkout[], plan: WeeklyPlan): number {
-  const trainingDays = plan.days.filter((d) => d.focus !== 'rest').map((d) => d.dayIndex);
+export function weekCompletion(history: CompletedWorkout[], plan: WeeklyPlan, fromIso?: string): number {
+  const trainingDays = activeTrainingDays(plan, fromIso);
   if (!trainingDays.length) return 0;
   const done = new Set(history.filter((h) => weekStartISO(fromISODate(h.date)) === plan.weekStart).map((h) => h.dayIndex));
   return trainingDays.filter((d) => done.has(d)).length / trainingDays.length;
