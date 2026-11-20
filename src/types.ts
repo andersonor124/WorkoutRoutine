@@ -98,6 +98,8 @@ export interface QuestState {
 }
 
 export interface Progress {
+  /** ISO date the user joined; days before it never count as missed. */
+  startDate?: string;
   xp: number;
   streak: number;
   bestStreak: number;

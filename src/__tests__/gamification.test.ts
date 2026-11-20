@@ -67,3 +67,17 @@ describe('quests', () => {
     expect(pickQuests('2026-11-16')).toEqual(q);
   });
 });
+
+import { activeTrainingDays, beforeStart } from '../engine/gamification';
+import { generatePlan } from '../engine/planGenerator';
+
+describe('join date', () => {
+  const plan = generatePlan({ ...baseProfile, daysPerWeek: 3 }, { weekStart: '2026-11-16' });
+  it('ignores training days before the join date', () => {
+    expect(activeTrainingDays(plan)).toEqual([0, 2, 4]);
+    expect(activeTrainingDays(plan, '2026-11-18')).toEqual([2, 4]);
+    expect(beforeStart(plan, 0, '2026-11-18')).toBe(true);
+    expect(beforeStart(plan, 2, '2026-11-18')).toBe(false);
+    expect(beforeStart(plan, 0, undefined)).toBe(false);
+  });
+});

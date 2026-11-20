@@ -46,7 +46,10 @@ export default function CelebrationOverlay() {
     case 'levelup':
       icon = <HeroAvatar profile={profile} level={current.level} size={120} />;
       title = `Level ${current.level}!`;
-      body = `You're now a ${rankTitle(current.level)}. Your hero just got stronger. Look at that transformation!`;
+      body =
+        rankTitle(current.level) !== rankTitle(current.level - 1)
+          ? `New rank: ${rankTitle(current.level)}! Your hero just got stronger. Look at that transformation!`
+          : 'Your hero just got stronger. Look at that transformation!';
       break;
     case 'badge': {
       const b = BADGES.find((x) => x.id === current.badgeId)!;
