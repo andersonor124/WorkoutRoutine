@@ -81,3 +81,37 @@ describe('join date', () => {
     expect(beforeStart(plan, 0, undefined)).toBe(false);
   });
 });
+
+import { ARCHETYPES, targetShape } from '../engine/avatarBody';
+import { BUILD_LIST } from '../data/builds';
+
+describe('class archetypes', () => {
+  const dist = (a: Record<string, number>, b: Record<string, number>) =>
+    Math.sqrt(['shoulder', 'waist', 'hip', 'arm', 'thigh', 'belly', 'neck'].reduce((s, k) => s + (a[k] - b[k]) ** 2, 0));
+
+  for (const weightKg of [55, 75, 115]) {
+    for (const sex of ['male', 'female'] as const) {
+      it(`every class has a clearly different goal body (${weightKg}kg, ${sex})`, () => {
+        const shapes = BUILD_LIST.map((b) => targetShape({ ...baseProfile, weightKg, sex, build: b.id }) as unknown as Record<string, number>);
+        for (let i = 0; i < shapes.length; i++)
+          for (let j = i + 1; j < shapes.length; j++) expect(dist(shapes[i], shapes[j])).toBeGreaterThan(2.5);
+      });
+    }
+  }
+
+  it('orders classes by size the way users expect', () => {
+    const order = ['titan', 'warrior', 'ranger', 'ninja', 'phoenix', 'nomad'] as const;
+    for (let i = 1; i < order.length; i++) expect(ARCHETYPES[order[i - 1]].shoulder).toBeGreaterThan(ARCHETYPES[order[i]].shoulder);
+    const waists = Object.values(ARCHETYPES).map((a) => a.waist);
+    expect(ARCHETYPES.warrior.waist).toBe(Math.max(...waists));
+    const arms = Object.values(ARCHETYPES).map((a) => a.arm);
+    expect(ARCHETYPES.nomad.arm).toBe(Math.min(...arms));
+  });
+
+  it('still starts from the user and ends at the archetype', () => {
+    const p = { ...baseProfile, weightKg: 110, build: 'nomad' as const };
+    expect(shapeAtLevel(p, 1)).toEqual(startShape(p));
+    expect(shapeAtLevel(p, 15).shoulder).toBeCloseTo(ARCHETYPES.nomad.shoulder);
+    expect(shapeAtLevel(p, 15).waist).toBeCloseTo(ARCHETYPES.nomad.waist);
+  });
+});

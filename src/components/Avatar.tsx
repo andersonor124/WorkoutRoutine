@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { BUILDS } from '../data/builds';
+import { BUILDS, type Pose } from '../data/builds';
 import type { BodyShape } from '../engine/avatarBody';
 import type { AvatarLook, BuildId } from '../types';
 
@@ -58,7 +58,10 @@ export default function Avatar({ shape, look, build, stage, size = 180, ghost = 
   const hipY = 120;
   const footY = 180;
   const bellyX = B * 0.55;
-  const flex = stage >= 3;
+  // Everyone starts relaxed; the class's signature pose unlocks with evolution stage 3.
+  const pose: Pose | 'relaxed' = stage >= 3 ? BUILDS[build].pose : 'relaxed';
+  const neckW = (shape.neck ?? 12) * 0.95;
+  const traps = Math.max(0, (shape.neck ?? 12) - 12) * 1.4;
   const crop = look.top === 'crop';
   const shortsColor = look.shorts ?? '#1e293b';
   const skin = look.skin;
@@ -73,48 +76,113 @@ export default function Avatar({ shape, look, build, stage, size = 180, ghost = 
     L ${cx + H} ${hipY}
     L ${cx + W + bellyX} ${waistY}
     C ${cx + W + B} ${waistY - 12}, ${cx + S + 1} ${shoulderY + 13}, ${cx + S} ${shoulderY}
-    Q ${cx} ${shoulderY - 7} ${cx - S} ${shoulderY} Z`;
+    Q ${cx} ${shoulderY - 7 - traps} ${cx - S} ${shoulderY} Z`;
 
   const legHalf = T * 0.95;
   const legX = (side: -1 | 1) => cx + side * (H - legHalf + 0.5);
+  /** Per-pose leg tweaks: outward foot shift and how far the foot is lifted. */
+  const legPose = (side: -1 | 1): { dx: number; lift: number } => {
+    switch (pose) {
+      case 'arms-crossed':
+        return { dx: side * 5, lift: 0 }; // wide power stance
+      case 'double-biceps':
+        return { dx: side * 3, lift: 0 };
+      case 'fighting-stance':
+        return { dx: side * 6, lift: 0 };
+      case 'running':
+        return side === -1 ? { dx: 3, lift: 20 } : { dx: 2, lift: 0 }; // knee drive
+      default:
+        return { dx: 0, lift: 0 };
+    }
+  };
   const leg = (side: -1 | 1) => {
     const x = legX(side);
-    return `M ${x - legHalf} ${hipY - 4} Q ${x - legHalf * 0.9} ${hipY + 26} ${x - legHalf * 0.6} ${footY - 8} L ${x + legHalf * 0.6} ${footY - 8} Q ${x + legHalf * 0.9} ${hipY + 26} ${x + legHalf} ${hipY - 4} Z`;
+    const { dx, lift } = legPose(side);
+    const fx = x + dx;
+    const fy = footY - 8 - lift;
+    const kneeX = x + dx * 0.5 + (lift ? -side * 4 : 0);
+    return `M ${x - legHalf} ${hipY - 4} Q ${kneeX - legHalf * 0.95} ${hipY + 26 - lift * 0.6} ${fx - legHalf * 0.6} ${fy} L ${fx + legHalf * 0.6} ${fy} Q ${kneeX + legHalf * 0.95} ${hipY + 26 - lift * 0.6} ${x + legHalf} ${hipY - 4} Z`;
   };
 
-  const armPoints = (side: -1 | 1) => {
+  type ArmPts = { sx: number; sy: number; ex: number; ey: number; hx: number; hy: number; flexed: boolean };
+  /** Shoulder → elbow → fist for each pose. side -1 is the viewer's left. */
+  const armPoints = (side: -1 | 1): ArmPts => {
     const sx = cx + side * (S - A * 0.45);
     const sy = shoulderY + 4;
-    if (flex) {
+    const flexArm = (): ArmPts => {
       const ex = sx + side * (14 + A);
       const ey = sy + 7;
-      return { sx, sy, ex, ey, hx: ex - side * 1, hy: sy - 18 };
+      return { sx, sy, ex, ey, hx: ex - side * 1, hy: sy - 18, flexed: true };
+    };
+    const onHip = (): ArmPts => {
+      const ex = sx + side * (11 + A * 0.5);
+      const ey = sy + 15;
+      return { sx, sy, ex, ey, hx: cx + side * (W + bellyX + 1), hy: waistY - 3, flexed: false };
+    };
+    switch (pose) {
+      case 'double-biceps':
+        return flexArm();
+      case 'one-arm-flex':
+        return side === -1 ? flexArm() : onHip();
+      case 'hands-on-hips':
+        return onHip();
+      case 'arms-crossed': {
+        const ex = sx + side * (2 + A * 0.3);
+        const ey = sy + 21 + side * 1.5;
+        return { sx, sy, ex, ey, hx: cx - side * (S * 0.78), hy: ey - 3, flexed: false };
+      }
+      case 'fighting-stance':
+        if (side === -1) {
+          // lead guard: fist up and out
+          return { sx, sy, ex: sx - 11 - A * 0.3, ey: sy + 12, hx: sx - 7, hy: sy - 10, flexed: false };
+        }
+        // rear hand protecting the chin
+        return { sx, sy, ex: sx + 5 + A * 0.3, ey: sy + 17, hx: cx + 9, hy: headY + 24, flexed: false };
+      case 'running':
+        if (side === -1) return { sx, sy, ex: sx - 7, ey: sy + 17, hx: sx + 1, hy: sy + 4, flexed: false }; // pumping forward
+        return { sx, sy, ex: sx + 9, ey: sy + 15, hx: sx + 15, hy: sy + 31, flexed: false }; // swinging back
+      default: {
+        const ex = sx + side * (3 + B * 0.35 + A * 0.25);
+        const ey = sy + 20;
+        return { sx, sy, ex, ey, hx: ex + side * 1, hy: sy + 39, flexed: false };
+      }
     }
-    const ex = sx + side * (3 + B * 0.35 + A * 0.25);
-    const ey = sy + 20;
-    return { sx, sy, ex, ey, hx: ex + side * 1, hy: sy + 39 };
   };
 
   const renderArm = (side: -1 | 1) => {
     const a = armPoints(side);
     const Aw = 4.6 + (A - 5) * 0.6; // limb thickness grows slower; the biceps bulge shows the muscle
-    const bx = (a.sx + a.ex) / 2;
-    const by = (a.sy + a.ey) / 2 - (flex ? A * 0.5 : 0);
     const fistR = Math.min(4.2 + A * 0.4, 8.5);
-    const bandW = (4.6 + (A - 5) * 0.6) * 1.75 + 1.5;
+    const bandW = Aw * 1.75 + 1.5;
+    const deg = (dx: number, dy: number) => (Math.atan2(dy, dx) * 180) / Math.PI;
+    const upperAngle = deg(a.ex - a.sx, a.ey - a.sy);
+    const foreAngle = deg(a.hx - a.ex, a.hy - a.ey);
+    const upperLen = Math.hypot(a.ex - a.sx, a.ey - a.sy);
+    const foreLen = Math.hypot(a.hx - a.ex, a.hy - a.ey) || 1;
+    const bx = (a.sx + a.ex) / 2;
+    const by = (a.sy + a.ey) / 2 - (a.flexed ? A * 0.5 : 0);
+    // wristband sits just before the fist, across the forearm
+    const wt = Math.max(0, 1 - (fistR + 2.5) / foreLen);
+    const wx = a.ex + (a.hx - a.ex) * wt;
+    const wy = a.ey + (a.hy - a.ey) * wt;
     return (
       <g key={`arm${side}`}>
         <line x1={a.sx} y1={a.sy} x2={a.ex} y2={a.ey} stroke={url('skin')} strokeWidth={Aw * 2.1} strokeLinecap="round" />
         <line x1={a.ex} y1={a.ey} x2={a.hx} y2={a.hy} stroke={url('skin')} strokeWidth={Aw * 1.75} strokeLinecap="round" />
         {/* biceps bulge grows with definition */}
-        <ellipse cx={bx} cy={by} rx={flex ? 5 + A * 0.45 : Aw * 0.95} ry={Aw * (0.95 + D * 0.55)} fill={url('skin')} />
+        {a.flexed ? (
+          <ellipse cx={bx} cy={by} rx={5 + A * 0.45} ry={Aw * (0.95 + D * 0.55)} fill={url('skin')} />
+        ) : (
+          <ellipse cx={bx} cy={by} rx={Math.max(Aw, upperLen * 0.4)} ry={Aw * (0.95 + D * 0.4)} fill={url('skin')} transform={`rotate(${upperAngle} ${bx} ${by})`} />
+        )}
         {D > 0.15 && (
           <path
-            d={flex ? `M ${bx - 4.5} ${by + 2.5} Q ${bx} ${by - A * 0.9} ${bx + 4.5} ${by + 2.5}` : `M ${bx - side * 2} ${by - 4} Q ${bx + side * 2.5} ${by} ${bx - side * 2} ${by + 5}`}
+            d={a.flexed ? `M ${bx - 4.5} ${by + 2.5} Q ${bx} ${by - A * 0.9} ${bx + 4.5} ${by + 2.5}` : `M ${bx - 3} ${by - Aw * 0.5} Q ${bx} ${by - Aw * 1.1} ${bx + 3} ${by - Aw * 0.5}`}
             stroke={line}
             strokeWidth={1.1}
             fill="none"
             opacity={D}
+            transform={a.flexed ? undefined : `rotate(${upperAngle} ${bx} ${by})`}
           />
         )}
         {/* fist */}
@@ -122,7 +190,17 @@ export default function Avatar({ shape, look, build, stage, size = 180, ghost = 
         <path d={`M ${a.hx - fistR * 0.6} ${a.hy - fistR * 0.25} q ${fistR * 0.6} ${-fistR * 0.35} ${fistR * 1.2} 0`} stroke={line} strokeWidth={0.9} fill="none" />
         {/* sweatband */}
         {stage >= 3 && (
-          <rect x={(flex ? a.hx : a.hx) - bandW / 2} y={a.hy + (flex ? fistR - 0.5 : -fistR - 4)} width={bandW} height={4.5} rx={2} fill={tint(accent, 0.25)} stroke={tint(accent, -0.2)} strokeWidth={0.5} />
+          <rect
+            x={wx - bandW / 2}
+            y={wy - 2.25}
+            width={bandW}
+            height={4.5}
+            rx={2}
+            fill={tint(accent, 0.25)}
+            stroke={tint(accent, -0.2)}
+            strokeWidth={0.5}
+            transform={`rotate(${foreAngle - 90} ${wx} ${wy})`}
+          />
         )}
       </g>
     );
@@ -212,8 +290,9 @@ export default function Avatar({ shape, look, build, stage, size = 180, ghost = 
 
   // ---------- sneakers ----------
   const sneaker = (side: -1 | 1) => {
-    const x = legX(side) + side * 1.5;
-    const y = footY;
+    const { dx, lift } = legPose(side);
+    const x = legX(side) + side * 1.5 + dx;
+    const y = footY - lift;
     return (
       <g key={`shoe${side}`}>
         <rect x={x - legHalf * 0.62} y={y - 11} width={legHalf * 1.24} height={4} rx={1.5} fill="#f8fafc" />
@@ -299,7 +378,7 @@ export default function Avatar({ shape, look, build, stage, size = 180, ghost = 
         <rect x={cx - W - bellyX - 0.5} y={waistY} width={(W + bellyX) * 2 + 1} height={3.4} rx={1.5} fill={tint(shortsColor, 0.35)} />
 
         {/* neck */}
-        <rect x={cx - 6} y={headY + 18} width={12} height={shoulderY - headY - 14} rx={4} fill={skinDark} />
+        <rect x={cx - neckW / 2} y={headY + 18} width={neckW} height={shoulderY - headY - 14} rx={4} fill={skinDark} />
 
         {/* torso: skin, then the top clipped to the torso shape */}
         <path d={torso} fill={url('skin')} />

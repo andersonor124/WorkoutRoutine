@@ -8,7 +8,7 @@ import { useAppStore } from '../store/useAppStore';
 const STAGES = [
   { level: 1, name: 'Rookie', perk: 'Your starting hero' },
   { level: 3, name: 'Headband', perk: 'Hero headband' },
-  { level: 6, name: 'Power Pose', perk: 'Flex pose + wristbands' },
+  { level: 6, name: 'Class Pose', perk: 'Signature class pose + wristbands' },
   { level: 10, name: 'Aura', perk: 'Glowing aura' },
   { level: 15, name: 'Champion', perk: 'Crown + full transformation' },
 ];

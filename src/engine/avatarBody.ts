@@ -17,6 +17,7 @@ export interface BodyShape {
   belly: number; // forward/side bulge of the belly
   definition: number; // 0..1 muscle lines
   glow: number; // 0..1 aura strength
+  neck: number; // neck width (thick for power builds)
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -37,22 +38,39 @@ export function startShape(p: Pick<Profile, 'heightCm' | 'weightKg' | 'sex'>): B
     belly: Math.max(0, f) * 9,
     definition: 0,
     glow: 0,
+    neck: 12 + Math.max(0, f) * 2,
   };
 }
 
-/** How the goal build bends the body. Deltas are intentionally exaggerated. */
-const BUILD_TARGET: Record<BuildId, (s: BodyShape, female: boolean) => Partial<BodyShape>> = {
-  titan: (s, f) => ({ shoulder: s.shoulder + (f ? 8 : 12), arm: Math.max(s.arm, 6) + (f ? 4 : 6.5), waist: Math.min(s.waist, 15), hip: Math.min(s.hip, f ? 19 : 17), thigh: Math.max(s.thigh, 8.5) + 4, belly: 0, definition: 0.85 }),
-  warrior: (s, f) => ({ shoulder: s.shoulder + (f ? 7 : 10), arm: Math.max(s.arm, 6) + (f ? 3.5 : 5), waist: Math.min(s.waist, 16.5), hip: Math.min(s.hip, f ? 20 : 18), thigh: Math.max(s.thigh, 8.5) + 5.5, belly: 0, definition: 0.65 }),
-  ninja: (s, f) => ({ shoulder: s.shoulder + (f ? 3 : 5), arm: 6.5 + (f ? 0.5 : 1.5), waist: f ? 12.5 : 13.5, hip: f ? 18 : 16, thigh: 9, belly: 0, definition: 1 }),
-  ranger: (s, f) => ({ shoulder: s.shoulder + (f ? 5 : 7), arm: 7 + (f ? 1 : 2.5), waist: f ? 13 : 14, hip: f ? 18.5 : 16.5, thigh: 11, belly: 0, definition: 0.85 }),
-  phoenix: (s, f) => ({ shoulder: s.shoulder + (f ? 2 : 4), arm: 6.5, waist: f ? 12 : 13, hip: f ? 18 : 16, thigh: 8.5, belly: 0, definition: 0.75 }),
-  nomad: (s, f) => ({ shoulder: s.shoulder + (f ? 2 : 3), arm: 6, waist: f ? 12.5 : 13.5, hip: f ? 17.5 : 15.5, thigh: 9, belly: 0, definition: 0.6 }),
+type Archetype = Omit<BodyShape, 'heightScale' | 'glow'>;
+
+/**
+ * Fixed goal body for each class (male proportions), deliberately exaggerated so
+ * every class has an unmistakable silhouette for every user.
+ */
+export const ARCHETYPES: Record<BuildId, Archetype> = {
+  titan: { shoulder: 38, waist: 15.5, hip: 17, arm: 13, thigh: 13, belly: 0, definition: 0.9, neck: 16 }, // huge V-taper
+  warrior: { shoulder: 34, waist: 21, hip: 21, arm: 11.5, thigh: 15, belly: 3, definition: 0.45, neck: 17 }, // thick & blocky
+  ranger: { shoulder: 31, waist: 15, hip: 17, arm: 9.5, thigh: 12.5, belly: 0, definition: 0.85, neck: 13 }, // athletic
+  ninja: { shoulder: 28, waist: 13, hip: 15, arm: 8, thigh: 9.5, belly: 0, definition: 1, neck: 12 }, // lean & shredded
+  phoenix: { shoulder: 25.5, waist: 12, hip: 17, arm: 6.8, thigh: 9.5, belly: 0, definition: 0.7, neck: 11.5 }, // slim & toned
+  nomad: { shoulder: 22.5, waist: 12.5, hip: 14, arm: 5.2, thigh: 7.5, belly: 0, definition: 0.55, neck: 11 }, // wiry runner
 };
 
 export function targetShape(p: Pick<Profile, 'heightCm' | 'weightKg' | 'sex' | 'build'>): BodyShape {
   const s = startShape(p);
-  return { ...s, ...BUILD_TARGET[p.build](s, p.sex === 'female'), glow: 1 };
+  const a = ARCHETYPES[p.build];
+  const female = p.sex === 'female';
+  return {
+    ...a,
+    shoulder: female ? a.shoulder * 0.85 : a.shoulder,
+    arm: female ? a.arm * 0.85 : a.arm,
+    neck: female ? a.neck * 0.85 : a.neck,
+    hip: female ? a.hip + 3 : a.hip,
+    waist: female ? a.waist - 1 : a.waist,
+    heightScale: s.heightScale,
+    glow: 1,
+  };
 }
 
 /** Progress 0..1 toward the goal body. Eased so early levels already show visible change. */

@@ -137,12 +137,15 @@ export function BuildPicker({ p, set }: { p: Profile; set: (patch: Partial<Profi
             style={on ? { borderColor: b.color, boxShadow: `0 0 24px ${b.color}55` } : undefined}
           >
             <div className="flex justify-center">
-              <HeroAvatar profile={{ ...p, build: b.id, avatar: { ...p.avatar, outfit: b.color } }} level={15} size={70} />
+              <HeroAvatar profile={{ ...p, build: b.id, avatar: { ...p.avatar, outfit: b.color } }} level={15} size={96} />
             </div>
             <div className="mt-1 font-display text-base font-bold" style={{ color: b.color }}>
               {b.emoji} {b.className}
             </div>
             <div className="text-xs font-bold text-slate-300">{b.title}</div>
+            <div className="mt-1 inline-block rounded-md px-1.5 py-0.5 text-[11px] font-bold" style={{ background: `${b.color}22`, color: b.color }}>
+              💪 {b.physique}
+            </div>
             <div className="mt-1 text-[11px] leading-snug text-slate-400">{b.tagline}</div>
           </button>
         );

@@ -39,7 +39,7 @@ export default function TransformationCard({ profile, startProfile, xp }: { prof
         <ProgressBar value={pct} max={100} color={build.color} />
         <p className="mt-2 text-xs text-slate-400">
           {nextMilestone
-            ? `Next evolution at level ${nextMilestone}: ${{ 3: 'hero headband', 6: 'power pose + wristbands', 10: 'glowing aura', 15: 'champion crown' }[nextMilestone]} unlocked!`
+            ? `Next evolution at level ${nextMilestone}: ${{ 3: 'hero headband', 6: 'signature class pose + wristbands', 10: 'glowing aura', 15: 'champion crown' }[nextMilestone]} unlocked!`
             : 'Fully evolved. You are a legend! 👑'}
         </p>
       </div>
