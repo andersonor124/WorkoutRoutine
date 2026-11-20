@@ -9,7 +9,8 @@ import type { AvatarLook, Equipment, FitnessLevel, Profile, Sex } from '../types
 export const SKINS = ['#f9d7b9', '#eac096', '#d29b6c', '#a86b42', '#7a4a2a', '#4b2e1c'];
 export const HAIRS = ['#1f1611', '#4a2f1b', '#8b5a2b', '#d6a756', '#c2410c', '#9ca3af', '#7c3aed'];
 export const OUTFITS = ['#22d3ee', '#f97316', '#ef4444', '#84cc16', '#f43f5e', '#a78bfa', '#facc15', '#3b82f6'];
-export const HAIR_STYLES: AvatarLook['hairStyle'][] = ['short', 'long', 'bun', 'bald'];
+export const HAIR_STYLES: AvatarLook['hairStyle'][] = ['short', 'long', 'bun', 'ponytail', 'bald'];
+export const SHORTS = ['#1e293b', '#6ee7b7', '#f9a8d4', '#93c5fd', '#fde68a', '#e5e7eb'];
 
 const DEFAULT: Profile = {
   name: '',
@@ -22,7 +23,7 @@ const DEFAULT: Profile = {
   minutesPerSession: 30,
   equipment: 'none',
   build: 'ninja',
-  avatar: { skin: SKINS[1], hair: HAIRS[0], outfit: OUTFITS[0], hairStyle: 'short' },
+  avatar: { skin: SKINS[1], hair: HAIRS[0], outfit: OUTFITS[0], hairStyle: 'short', top: 'tank', shorts: SHORTS[0] },
   units: 'metric',
 };
 
@@ -82,7 +83,7 @@ export function BodyFields({ p, set }: { p: Profile; set: (patch: Partial<Profil
         </label>
         <div>
           <span className="label">Sex</span>
-          <Choice value={p.sex} options={['male', 'female', 'other'] as Sex[]} onChange={(sex) => set({ sex })} render={(s) => s[0].toUpperCase() + s.slice(1)} />
+          <Choice value={p.sex} options={['male', 'female', 'other'] as Sex[]} onChange={(sex) => set({ sex, avatar: { ...p.avatar, top: sex === 'female' ? 'crop' : 'tank', hairStyle: sex === 'female' && p.avatar.hairStyle === 'short' ? 'bun' : p.avatar.hairStyle } })} render={(s) => s[0].toUpperCase() + s.slice(1)} />
         </div>
       </div>
     </div>
@@ -152,7 +153,7 @@ export function BuildPicker({ p, set }: { p: Profile; set: (patch: Partial<Profi
 
 export function LookFields({ p, set }: { p: Profile; set: (patch: Partial<Profile>) => void }) {
   const setLook = (patch: Partial<AvatarLook>) => set({ avatar: { ...p.avatar, ...patch } });
-  const swatch = (colors: string[], key: 'skin' | 'hair' | 'outfit') => (
+  const swatch = (colors: string[], key: 'skin' | 'hair' | 'outfit' | 'shorts') => (
     <div className="flex flex-wrap gap-2">
       {colors.map((c) => (
         <button
@@ -174,15 +175,23 @@ export function LookFields({ p, set }: { p: Profile; set: (patch: Partial<Profil
       </div>
       <div>
         <span className="label">Hair style</span>
-        <Choice value={p.avatar.hairStyle} options={HAIR_STYLES} onChange={(hairStyle) => setLook({ hairStyle })} render={(h) => h[0].toUpperCase() + h.slice(1)} />
+        <Choice value={p.avatar.hairStyle} options={HAIR_STYLES} onChange={(hairStyle) => setLook({ hairStyle })} render={(h) => ({ short: 'Short', long: 'Long', bun: 'Space buns', ponytail: 'Ponytail', bald: 'Bald' })[h]} />
       </div>
       <div>
         <span className="label">Hair color</span>
         {swatch(HAIRS, 'hair')}
       </div>
       <div>
-        <span className="label">Outfit</span>
+        <span className="label">Top</span>
+        <Choice value={p.avatar.top ?? 'tank'} options={['tank', 'crop'] as const} onChange={(top) => setLook({ top })} render={(t) => (t === 'tank' ? '👕 Tank top' : '🎽 Sports top')} />
+      </div>
+      <div>
+        <span className="label">Top color</span>
         {swatch(OUTFITS, 'outfit')}
+      </div>
+      <div>
+        <span className="label">Shorts</span>
+        {swatch(SHORTS, 'shorts')}
       </div>
     </div>
   );

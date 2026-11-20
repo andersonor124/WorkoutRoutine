@@ -13,7 +13,10 @@ export interface AvatarLook {
   skin: string;
   hair: string;
   outfit: string;
-  hairStyle: 'short' | 'long' | 'bun' | 'bald';
+  hairStyle: 'short' | 'long' | 'bun' | 'ponytail' | 'bald';
+  /** Optional for profiles saved before these options existed. */
+  top?: 'tank' | 'crop';
+  shorts?: string;
 }
 
 export interface Profile {
